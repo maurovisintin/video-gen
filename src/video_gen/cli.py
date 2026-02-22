@@ -38,6 +38,9 @@ def create(
     skip_video: bool = typer.Option(
         False, "--skip-video", help="Skip video generation (test TTS only)."
     ),
+    engine: str = typer.Option(
+        "ollama", "--engine", "-e", help="Script generation engine (ollama or claude)."
+    ),
 ) -> None:
     """Generate a complete TikTok video from a topic."""
     from video_gen.pipeline import run_pipeline
@@ -54,6 +57,7 @@ def create(
         output_dir=output_dir,
         reference_voice=reference_voice,
         skip_video=skip_video,
+        engine=engine,
     )
     console.print(f"\nOutput: {result}")
 
@@ -64,11 +68,14 @@ def script(
     output: Optional[Path] = typer.Option(
         None, "--output", "-o", help="Save script JSON to file."
     ),
+    engine: str = typer.Option(
+        "ollama", "--engine", "-e", help="Script generation engine (ollama or claude)."
+    ),
 ) -> None:
     """Generate a video script only (no audio or video)."""
     from video_gen.pipeline import generate_script
 
-    video_script = generate_script(topic)
+    video_script = generate_script(topic, engine=engine)
 
     script_json = json.dumps(video_script.model_dump(), indent=2)
 

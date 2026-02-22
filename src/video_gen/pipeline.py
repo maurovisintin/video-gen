@@ -13,18 +13,32 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from video_gen.compose.compositor import ClipWithAudio, Compositor
 from video_gen.config import OUTPUT_DIR, REFERENCE_VOICES_DIR
 from video_gen.models.script import VideoScript
-from video_gen.script.claude import ClaudeScriptGenerator
+from video_gen.script.base import ScriptGenerator
 from video_gen.tts.f5tts import F5TTSEngine
 from video_gen.video.wan import WanVideoGenerator
 
 console = Console()
 
 
-def generate_script(topic: str) -> VideoScript:
+def _create_generator(engine: str) -> ScriptGenerator:
+    """Create a script generator for the given engine."""
+    if engine == "ollama":
+        from video_gen.script.ollama import OllamaScriptGenerator
+
+        return OllamaScriptGenerator()
+    elif engine == "claude":
+        from video_gen.script.claude import ClaudeScriptGenerator
+
+        return ClaudeScriptGenerator()
+    else:
+        raise ValueError(f"Unknown engine: {engine!r}. Use 'ollama' or 'claude'.")
+
+
+def generate_script(topic: str, engine: str = "ollama") -> VideoScript:
     """Generate a video script for the given topic."""
     console.print(Panel(f"[bold]Topic:[/bold] {topic}", title="Script Generation"))
 
-    generator = ClaudeScriptGenerator()
+    generator = _create_generator(engine)
 
     with Progress(
         SpinnerColumn(),
@@ -32,7 +46,7 @@ def generate_script(topic: str) -> VideoScript:
         TimeElapsedColumn(),
         console=console,
     ) as progress:
-        task = progress.add_task("Generating script with Claude...", total=None)
+        task = progress.add_task(f"Generating script with {engine}...", total=None)
         script = generator.generate(topic)
         progress.update(task, completed=True)
 
@@ -56,6 +70,7 @@ def run_pipeline(
     output_dir: Path | None = None,
     reference_voice: Path | None = None,
     skip_video: bool = False,
+    engine: str = "ollama",
 ) -> Path:
     """Run the full pipeline: topic -> final video.
 
@@ -64,6 +79,7 @@ def run_pipeline(
         output_dir: Output directory (defaults to output/<timestamp>/).
         reference_voice: Path to reference audio for voice cloning.
         skip_video: If True, skip video generation (for testing TTS + composition).
+        engine: Script generation engine ('ollama' or 'claude').
 
     Returns:
         Path to the final video.
@@ -82,7 +98,7 @@ def run_pipeline(
             console.print(f"Using reference voice: {reference_voice.name}")
 
     # ── Stage 1: Script Generation ──────────────────────────────────────
-    script = generate_script(topic)
+    script = generate_script(topic, engine=engine)
 
     # Save script to disk
     script_path = output_dir / "script.json"

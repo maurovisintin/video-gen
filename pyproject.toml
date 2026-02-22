@@ -10,6 +10,7 @@ dependencies = [
     "typer>=0.9",
     "rich>=13.0",
     "anthropic>=0.40",
+    "ollama>=0.4",
     "torch>=2.0",
     "diffusers>=0.31",
     "transformers>=4.40",

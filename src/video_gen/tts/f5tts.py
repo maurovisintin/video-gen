@@ -47,19 +47,24 @@ class F5TTSEngine(TTSEngine):
 
         ref_audio = str(reference_audio) if reference_audio else None
         # F5-TTS needs reference text for voice cloning; empty string
-        # triggers automatic transcription of reference audio
+        # triggers automatic transcription (which can crash on some setups).
+        # Look for a .txt sidecar file with the same stem as the reference audio.
         ref_text = ""
+        if reference_audio is not None:
+            txt_path = reference_audio.with_suffix(".txt")
+            if txt_path.exists():
+                ref_text = txt_path.read_text().strip()
 
-        wav_path, _spectrogram, _ = self._model.infer(
+        self._model.infer(
             ref_file=ref_audio,
             ref_text=ref_text,
             gen_text=text,
             file_wave=str(output_path),
         )
 
-        duration = _get_wav_duration(Path(wav_path))
+        duration = _get_wav_duration(output_path)
 
-        return TTSResult(audio_path=Path(wav_path), duration_seconds=duration)
+        return TTSResult(audio_path=output_path, duration_seconds=duration)
 
 
 def _get_wav_duration(path: Path) -> float:
