@@ -20,6 +20,26 @@ class F5TTSEngine(TTSEngine):
         if self._model is not None:
             return
 
+        # Patch F5-TTS seed_everything to clamp PYTHONHASHSEED to valid 32-bit range.
+        # Bug: F5-TTS uses random.randint(0, sys.maxsize) which is 64-bit,
+        # but PYTHONHASHSEED only accepts 0 to 2^32-1.
+        import os
+        import random
+
+        import torch
+        from f5_tts.model import utils as f5_utils
+
+        def _seed_everything_fixed(seed=0):
+            random.seed(seed)
+            os.environ["PYTHONHASHSEED"] = str(seed % (2**32))
+            torch.manual_seed(seed)
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
+
+        f5_utils.seed_everything = _seed_everything_fixed
+
         from f5_tts.api import F5TTS
 
         self._model = F5TTS(device=self.device)

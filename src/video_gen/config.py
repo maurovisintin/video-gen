@@ -63,6 +63,10 @@ def get_vae_dtype(device: str | None = None) -> torch.dtype:
 
 def setup_environment() -> None:
     """Set environment variables needed for platform compatibility."""
+    # Ensure PYTHONHASHSEED is valid before any library sets an out-of-range value.
+    os.environ.setdefault("PYTHONHASHSEED", "0")
+    # Allow enough time for large model downloads (default is 10s, way too short).
+    os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "300")
     if get_device() == "mps":
         os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 

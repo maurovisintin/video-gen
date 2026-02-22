@@ -49,17 +49,20 @@ class WanVideoGenerator(VideoGenerator):
 
         if self.device == "mps":
             # On MPS: move pipeline to MPS but keep T5 encoder on CPU
-            # to avoid MPS memory issues with the text encoder
+            # to avoid MPS memory issues with the text encoder.
+            # Do NOT call enable_model_cpu_offload() — it resets .to("mps")
+            # by calling .to("cpu") internally, and its accelerate hooks
+            # are not reliable on MPS.
             self._pipe.to("mps")
             self._pipe.text_encoder.to("cpu")
         else:
             self._pipe.to(self.device)
-
-        # Enable memory-efficient attention if available
-        try:
-            self._pipe.enable_model_cpu_offload()
-        except Exception:
-            pass  # Not all setups support this
+            # enable_model_cpu_offload only works reliably on CUDA
+            if self.device == "cuda":
+                try:
+                    self._pipe.enable_model_cpu_offload()
+                except Exception:
+                    pass
 
     def generate_clip(
         self,

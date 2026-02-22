@@ -152,6 +152,16 @@ def run_pipeline(
             TimeElapsedColumn(),
             console=console,
         ) as progress:
+            task = progress.add_task("Loading video model...", total=None)
+            video_gen.load_model()
+            progress.update(task, description="Video model loaded", completed=True)
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            TimeElapsedColumn(),
+            console=console,
+        ) as progress:
             for i, scene in enumerate(script.scenes):
                 task = progress.add_task(
                     f"Scene {scene.scene_number}: Generating video...",
