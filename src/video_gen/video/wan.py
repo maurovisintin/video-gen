@@ -34,6 +34,11 @@ class WanVideoGenerator(VideoGenerator):
 
         from diffusers import AutoencoderKLWan, WanPipeline
 
+        # Ensure the download timeout is applied even if huggingface_hub
+        # was imported before our env var was set.
+        import huggingface_hub.constants
+        huggingface_hub.constants.HF_HUB_DOWNLOAD_TIMEOUT = 300
+
         # Load VAE with appropriate dtype (float32 on MPS)
         vae = AutoencoderKLWan.from_pretrained(
             self.MODEL_ID,

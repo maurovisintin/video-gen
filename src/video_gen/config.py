@@ -6,6 +6,9 @@ import os
 import platform
 from pathlib import Path
 
+# Must be set before huggingface_hub is imported (it reads env vars at import time).
+os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "300")
+
 import torch
 from dotenv import load_dotenv
 
